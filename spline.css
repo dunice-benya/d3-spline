@@ -1,0 +1,41 @@
+body {
+  font: 13px sans-serif;
+}
+
+#chart svg {
+  width: 960px;
+  height: 500px;
+  margin: 20px;
+  padding: 40px;
+  border: solid 1px #ccc;
+}
+
+rect {
+  fill: #fff;
+}
+
+circle, .line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+  fill: lightsteelblue;
+}
+
+circle {
+  fill: #fff;
+  fill-opacity: .2;
+  cursor: move;
+}
+
+circle.selected {
+  fill: #ff7f0e;
+  stroke: #ff7f0e;
+}
+
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
