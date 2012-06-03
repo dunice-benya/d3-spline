@@ -5,11 +5,42 @@ console.warn('to make basis interpolation');
 
 var width = 960,
     height = 500,
-    line = d3.svg.line(),
-    points = d3.range(0, 11).map(function(i) { return [i * width / 10, 50 + Math.random() * (height - 100)]; }),
-    dragged = null,
-    selected = points[0];
+    n = 10;
+//    points = d3.range(0, 11).map(function(i) { return [i * width / 10, 50 + Math.random() * (height - 100)]; }),
 
+
+
+
+// create initial points array, to get a sum of ordinates to 1
+var points = (function () {
+  var sum = 1;
+  var pts = [];
+  var yArr = _.range(n + 1).map(function (ind) {
+    var val = (ind === n) ? sum : Math.random() * sum;
+    sum -= val;
+    return val;
+  }).sort();
+//  yArr = _.shuffle(yArr);
+  return _.map(yArr, function (val, ind) {
+    return [width * ind / n, height * (1 - val)]
+  });
+
+})();
+
+
+console.log('points', points);
+var ys = _.pluck(points, '1');
+console.log('ys', ys.sort());
+var sum = _.reduce(ys, function(memo, num){ return memo + num; }, 0);
+console.log('sum', sum);
+
+
+
+var selected = points[0],
+    dragged = null;
+
+
+var line = d3.svg.line();
 
 var x = d3.scale.linear()
     .domain([0, 1])
@@ -31,7 +62,7 @@ var area = d3.svg.area()
     .x(line.x())
     .y1(line.y())
     .y0(y(0))
-//    .interpolate('basis');
+    .interpolate('basis');
 
 
 var svg = d3.select("#chart").append("svg")
@@ -69,10 +100,10 @@ d3.select("#interpolate")
     })
   .selectAll("option")
     .data([
+      "basis",
       "linear",
       "step-before",
       "step-after",
-      "basis",
       "basis-open",
       "basis-closed",
       "cardinal",
@@ -82,7 +113,11 @@ d3.select("#interpolate")
     ])
   .enter().append("option")
     .attr("value", String)
-    .text(String);
+    .text(String)
+  .selectAll("option")
+  .attr("selected", function () {
+    return true
+  })
 
 
 function update() {
@@ -135,7 +170,7 @@ function mousemove() {
 //    }
 //  }
 
-  console.log('otherPoints', otherPoints.length, 'of', points.length);
+//  console.log('otherPoints', otherPoints.length, 'of', points.length);
 
 //  dragged[0] = Math.max(0, Math.min(width, m[0]));
   var oldY = dragged[1];
