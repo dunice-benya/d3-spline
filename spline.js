@@ -12,7 +12,7 @@ window.MySpline = function (options) {
 
     !options && (options = {})
 
-    var width = options.width || 960,
+    var width = options.width || 500,
         height = options.height || 500,
         N = options.N || 10
 
@@ -105,6 +105,7 @@ window.MySpline = function (options) {
 
     svg.append("path")
         .data([points])
+        .attr("id", "main")
         .attr("class", "line")
         .call(update)
 
@@ -116,6 +117,12 @@ window.MySpline = function (options) {
     svg.append("g")
         .attr("class", "y axis")
         .call(yAxis)
+
+
+//    z = svg.selectAll(".x.axis .tick")
+
+//        .data([points])
+
 
     d3.select(window)
         .on("mousemove", mousemove)
@@ -151,7 +158,7 @@ window.MySpline = function (options) {
 
 
     function update() {
-        svg.select("path").attr("d", area)
+        svg.select("path#main").attr("d", area)
         var circle = svg.selectAll("circle")
             .data(points, function(d) { return d })
         circle.enter().append("circle")
@@ -205,5 +212,5 @@ window.MySpline = function (options) {
 }
 
 
-spline = new MySpline({N: 10})
+spline = new MySpline({N: 10, width: 1500, height: 500})
 

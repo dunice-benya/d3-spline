@@ -3,8 +3,8 @@ body {
 }
 
 #chart svg {
-  width: 960px;
-  height: 500px;
+/*  width: 960px;*/
+/*  height: 500px;*/
   margin: 20px;
   padding: 40px;
   border: solid 1px #ccc;
