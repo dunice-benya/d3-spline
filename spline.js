@@ -68,7 +68,18 @@ window.MySpline = function (options) {
     // END POINT
 
 
-    var points = d3.range(0, N + 1).map(function(i) { return new Point(i / N, 0.3) })
+//    var points = d3.range(0, N + 1).map(function(i) { return new Point(i / N, 0.3) })
+
+    function fi(x) {
+        if(x === undefined){return}
+        return (1 / Math.sqrt(2*3.14))*(Math.pow(Math.E,(-0.5*(Math.pow(x, 2)))))
+    }
+    var points = d3.range(0, N + 1).map(function(i) {
+        return new Point(i / N, fi(i / N))
+
+    })
+
+
 
     var realSum = _.reduce(points, function (memo, point) {
         return memo + point.realY
