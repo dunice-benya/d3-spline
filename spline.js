@@ -80,13 +80,19 @@ window.MySpline = function (options) {
         dragged = null
 
 
+
+
     var xAxis = d3.svg.axis()
         .scale(x)
         .orient("bottom")
+        .tickSize(-500)
+        .tickPadding(10)
 
     var yAxis = d3.svg.axis()
         .scale(y)
         .orient("left")
+        .tickSize(-1500)
+        .tickPadding(10)
 
     var area = d3.svg.area()
         .x(line.x())
