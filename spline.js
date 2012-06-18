@@ -9,6 +9,8 @@ console.warn('to make half circle dragged at border')
 window.MySpline = function (options) {
 
     var self = this
+    var flag = false
+    var lastSteps = []
 
     !options && (options = {})
 
@@ -67,19 +69,20 @@ window.MySpline = function (options) {
 
     // END POINT
 
-
-//    var points = d3.range(0, N + 1).map(function(i) { return new Point(i / N, 0.3) })
-
     function fi(x) {
         if(x === undefined){return}
-        return (1 / Math.sqrt(2*3.14))*(Math.pow(Math.E,(-0.5*(Math.pow(x, 2)))))
+        var E  = Math.E,
+            PI = Math.PI
+        return (1 / Math.sqrt(2*PI))*(Math.pow(E,(-0.5*(Math.pow(x, 2)))))
     }
+
     var points = d3.range(0, N + 1).map(function(i) {
         return new Point(i / N, fi(i / N))
-
     })
 
-
+//    var points = d3.range(0, N + 1).map(function(i) {
+//        return new Point(i / N, 0.5)
+//    })
 
     var realSum = _.reduce(points, function (memo, point) {
         return memo + point.realY
@@ -89,9 +92,6 @@ window.MySpline = function (options) {
 
     var selected = points[0],
         dragged = null
-
-
-
 
     var xAxis = d3.svg.axis()
         .scale(x)
@@ -110,7 +110,6 @@ window.MySpline = function (options) {
         .y1(line.y())
         .y0(y(0))
         .interpolate('basis')
-
 
     var svg = d3.select("#chart").append("svg")
         .attr("width", width)
@@ -135,16 +134,9 @@ window.MySpline = function (options) {
         .attr("class", "y axis")
         .call(yAxis)
 
-
-//    z = svg.selectAll(".x.axis .tick")
-
-//        .data([points])
-
-
     d3.select(window)
         .on("mousemove", mousemove)
         .on("mouseup", mouseup)
-
 
     // Add interpolator dropdown
     d3.select("#interpolate")
@@ -179,16 +171,16 @@ window.MySpline = function (options) {
         var circle = svg.selectAll("circle")
             .data(points, function(d) { return d })
         circle.enter().append("circle")
-//            .attr("r", 1e-6)
-            .attr("r", 6.5)
+            .attr("r", 3)
+//            .attr("r", 9)
             .on("mousedown", function(d) {
                 selected = dragged = d
                 update()
             })
-//        .transition()
-//            .duration(1750)
-//            .ease("elastic")
-//            .attr("r", 6.5)
+        .transition()
+            .duration(1500)
+            .ease("bounce")
+            .attr("r", 9)
         circle
             .classed("selected", function(d) { return d === selected })
             .attr("cx", function(d) { return d[0] })
@@ -201,24 +193,82 @@ window.MySpline = function (options) {
         }
     }
 
-
     function mousemove() {
-        if (!dragged) return
-        var cursorPoint = d3.mouse(svg.node())
-        var oldY = dragged.realY
-        var newY = Math.max(0, Math.min(1, yy(cursorPoint[1])))
-        var dy = newY - oldY
-        var others = _(points).filter(function (point) {
-            return (point.guid !== dragged.guid)
-        })
-        var othersSum = realSum - oldY
-        var dyy = dy / othersSum
-        _.each(others, function (point) {
-            point.realY *= 1 - dyy
-        })
+        if (!dragged) {return}
+        var cursorPoint = d3.mouse(svg.node()),
+            oldY = dragged.realY,
+            newY = Math.max(0, Math.min(1, yy(cursorPoint[1]))),
+            steps = (function () {
+
+                var dy = newY - oldY,
+                    movingPointCount = N,
+                    others = _(points).filter(function (point) {
+                    var eq_guid  = (point.guid === dragged.guid),
+                        dy_cond1 = dy > 0 && point.realY === 0,
+                        dy_cond2 = dy < 0 && point.realY === 1
+                    return ( !eq_guid && !dy_cond1 & !dy_cond2 )
+                })
+                var activePoints = _.extend([], others),
+                    steps = [],
+                    isLastStep = false
+                do {
+                    if (dy === 0) break
+                    var dyy = dy / activePoints.length,
+                        pointsToRemove = _.filter(activePoints, function (point) {
+                        return (dyy > 0 && dyy > point.realY) || (dyy < 0 && dyy < point.realY - 1)
+                    })
+                    // always positive
+                    var delta = _.min(_.map(activePoints, function (point) {
+                        if (dyy > 0) return point.realY
+                        else if (dyy < 0) return 1 - point.realY
+                        else throw "custom error: dyy is 0!"
+                    }))
+                    isLastStep = (pointsToRemove.length === 0)
+                    if (isLastStep) {
+                        steps.push({
+                            points : activePoints,
+                            dyy    : dyy
+                        })
+                    } else {
+                        // add step (partial)
+                        step_dyy = (dyy > 0) ? - delta : + delta
+                        steps.push({
+                            points : activePoints,
+                            dyy    : step_dyy
+                        })
+                        dy = dy - (step_dyy * activePoints.length)
+                        activePoints = _.without.apply(_, [activePoints].concat(pointsToRemove))
+                    }
+                } while ( ! isLastStep )
+                return steps
+            })()
+
+
+        function movePoints() {
+            _.each(steps, function (step) {
+                _.each(step.points, function (point) {
+                    point.realY -= step.dyy
+                })
+            })
+        }
+
+        // move active point
         dragged.realY = newY
+        // move other points by step
+        movePoints(steps)
         update()
+
+        // error handling
+        var _sum = _.reduce(points, function (memo, point) {
+            return point.realY + memo
+        }, 0)
+        var _diff = Math.abs(_sum - realSum)
+        var eps = 1e-6
+        if (_diff > eps)
+            console.error('sum diff', _diff, steps);
+
     }
+
 
     function mouseup() {
         if (!dragged) return
@@ -227,7 +277,6 @@ window.MySpline = function (options) {
     }
 
 }
-
 
 spline = new MySpline({N: 10, width: 1500, height: 500})
 
